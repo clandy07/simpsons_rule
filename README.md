@@ -3,11 +3,19 @@
 An interactive R Shiny app that approximates definite integrals using the **composite Simpson's 1/3 Rule**, visualizes the area under the curve, and shows every step of the calculation.
 
 $$
-\int_a^b f(x)\,dx \approx \frac{h}{3}\Big[f(x_0) + 4f(x_1) + 2f(x_2) + 4f(x_3) + \cdots + 4f(x_{n-1}) + f(x_n)\Big],
-\qquad h = \frac{b-a}{n}
+S_n = \frac{\Delta x}{3}\Big[f(x_0) + 4f(x_1) + 2f(x_2) + 4f(x_3) + 2f(x_4) + \cdots + 2f(x_{n-2}) + 4f(x_{n-1}) + f(x_n)\Big],
+\qquad \Delta x = \frac{b-a}{n}
 $$
 
-> `n` (the number of subintervals) **must be even**.
+The error bound is
+
+$$
+\bigl|\,\text{Error in } S_n\,\bigr| \;\le\; \frac{M\,(b-a)^5}{180\,n^4},
+$$
+
+where $M$ is the maximum of $|f^{(4)}(x)|$ on $[a, b]$.
+
+> $n$ (the number of subintervals) **must be even**.
 
 ---
 
@@ -134,12 +142,12 @@ A single reactive, `df_results()`, returns a data frame with one row per node:
 | column        | meaning                                              |
 | ------------- | ---------------------------------------------------- |
 | `i`           | node index, `0..n`                                   |
-| `x_i`         | node position, `a + i*h`                             |
+| `x_i`         | node position, `a + i * Δx`                          |
 | `f_xi`        | function value at the node                           |
 | `coefficient` | Simpson coefficient: `1, 4, 2, 4, 2, …, 4, 1`        |
 | `weighted`    | `coefficient * f_xi`                                 |
 
-The approximation is `(h/3) * sum(weighted)`. All three output panels (Plot, Steps, Table) and both summary fields read from this single reactive — there is one source of truth for the math.
+The approximation is `S_n = (Δx / 3) * sum(weighted)` (in code, the variable is named `h` for brevity but represents Δx). All three output panels (Plot, Steps, Table) and both summary fields read from this single reactive — there is one source of truth for the math.
 
 ### Styling
 
@@ -168,4 +176,4 @@ Rscript -e "f <- function(x) x^3 + 2*x; a <- 0; b <- 4; n <- 4; h <- (b-a)/n; x 
 
 ## Credits
 
-Developed by **Group 6: Buenavista, Cortes, Israel, Largo, Rafanan**, 2026.
+Developed by **Group 6**: Estelito Buenavista, Eduardo Cortes, Matthew Israel, Rhenz Largo, Cedric Rafanan. © 2026.
