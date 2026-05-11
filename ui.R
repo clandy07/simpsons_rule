@@ -163,35 +163,93 @@ fluidPage(
           h4(class = "center", "What is Simpson's Rule?"),
           h4(
             HTML(
-              "<strong>Simpson's Rule</strong> is a numerical method for approximating the value of a definite integral. Instead of fitting straight lines (as the Trapezoidal Rule does), Simpson's Rule fits <strong>parabolas</strong> over pairs of subintervals, producing a much more accurate estimate of the area under a curve. It is widely used in <strong>engineering, physics, signal processing, and any field where closed-form integration is difficult or impossible</strong>."
-            )
-          ),
-          h4("The composite Simpson's 1/3 Rule formula is given by:"),
-          withMathJax(
-            h4(
-              class = "center",
-              "$$S_n = \\frac{\\Delta x}{3}\\left[f(x_0) + 4f(x_1) + 2f(x_2) + 4f(x_3) + 2f(x_4) + \\cdots + 2f(x_{n-2}) + 4f(x_{n-1}) + f(x_n)\\right]$$"
-            )
-          ),
-          h4("where:"),
-          withMathJax(
-            h4(class = "center", "$$\\Delta x = \\frac{b - a}{n}$$")
-          ),
-          h4(
-            HTML(
-              "and the interval <strong>[a, b]</strong> is divided into <i>n</i> subintervals. The number of subintervals <i>n</i> <strong>must be even</strong> for Simpson's 1/3 Rule to apply, since it works on pairs of subintervals."
-            )
-          ),
-          h4("The error bound for Simpson's 1/3 Rule is:"),
-          withMathJax(
-            h4(
-              class = "center",
-              "$$\\bigl|\\,\\text{Error in } S_n\\,\\bigr| \\;\\le\\; \\frac{M\\,(b - a)^5}{180\\,n^4}$$"
+              "<strong>Simpson's Rule</strong> approximates a definite integral by partitioning <strong>[a, b]</strong> into an <strong>even number of subintervals of equal width</strong> and fitting a <strong>quadratic</strong> over each <strong>pair</strong> of consecutive subintervals."
             )
           ),
           h4(
             HTML(
-              "where <i>M</i> is the maximum value of <strong>|f<sup>(4)</sup>(x)|</strong> over <strong>[a, b]</strong>."
+              "Over the first pair of subintervals we approximate
+              <span style='white-space: nowrap;'>\u222b<sub>x<sub>0</sub></sub><sup>x<sub>2</sub></sup> f(x) dx</span> with
+              <span style='white-space: nowrap;'>\u222b<sub>x<sub>0</sub></sub><sup>x<sub>2</sub></sup> p(x) dx</span>,
+              where <i>p(x) = Ax<sup>2</sup> + Bx + C</i> is the quadratic passing through
+              <strong>(x<sub>0</sub>, f(x<sub>0</sub>))</strong>,
+              <strong>(x<sub>1</sub>, f(x<sub>1</sub>))</strong>, and
+              <strong>(x<sub>2</sub>, f(x<sub>2</sub>))</strong>.
+              Over the next pair of subintervals we fit another quadratic through
+              <strong>(x<sub>2</sub>, f(x<sub>2</sub>))</strong>,
+              <strong>(x<sub>3</sub>, f(x<sub>3</sub>))</strong>, and
+              <strong>(x<sub>4</sub>, f(x<sub>4</sub>))</strong>, and so on for each successive pair of subintervals."
+            )
+          ),
+          h4(class = "center", "Simpson's Rule"),
+          h4(
+            HTML(
+              "Assume that <strong>f(x)</strong> is continuous over <strong>[a, b]</strong>. Let <i>n</i> be a positive even integer and"
+            )
+          ),
+          withMathJax(
+            h4(class = "center", "$$\\Delta x = \\frac{b - a}{n}.$$")
+          ),
+          h4(
+            HTML(
+              "Let <strong>[a, b]</strong> be divided into <i>n</i> subintervals, each of length \u0394x, with endpoints
+              <span style='white-space: nowrap;'>P = {x<sub>0</sub>, x<sub>1</sub>, x<sub>2</sub>, &hellip;, x<sub>n</sub>}</span>. Set"
+            )
+          ),
+          withMathJax(
+            h4(
+              class = "center",
+              "$$S_n = \\frac{\\Delta x}{3}\\Big(f(x_0) + 4f(x_1) + 2f(x_2) + 4f(x_3) + 2f(x_4) + \\cdots + 2f(x_{n-2}) + 4f(x_{n-1}) + f(x_n)\\Big).$$"
+            )
+          ),
+          h4("Then,"),
+          withMathJax(
+            h4(class = "center", "$$\\lim_{n \\to +\\infty} S_n = \\int_a^b f(x)\\,dx.$$")
+          ),
+          h4(class = "center", "Error Bound for Simpson's Rule"),
+          h4(
+            HTML(
+              "Let <strong>f(x)</strong> be a continuous function over <strong>[a, b]</strong> having a fourth derivative,
+              <strong>f<sup>(4)</sup>(x)</strong>, over this interval. If <i>M</i> is the maximum value of
+              <strong>|f<sup>(4)</sup>(x)|</strong> over <strong>[a, b]</strong>, then the upper bound for the error in using
+              <i>S<sub>n</sub></i> to estimate <span style='white-space: nowrap;'>\u222b<sub>a</sub><sup>b</sup> f(x) dx</span> is given by"
+            )
+          ),
+          withMathJax(
+            h4(
+              class = "center",
+              "$$\\bigl|\\,\\text{Error in } S_n\\,\\bigr| \\;\\le\\; \\frac{M\\,(b - a)^5}{180\\,n^4}.$$"
+            )
+          ),
+          h4(class = "center", "Worked Example"),
+          h4(
+            HTML(
+              "Use <i>S<sub>2</sub></i> to approximate <span style='white-space: nowrap;'>\u222b<sub>0</sub><sup>1</sup> x<sup>3</sup> dx</span> and estimate a bound for the error in <i>S<sub>2</sub></i>.
+              <br><br>Since <strong>[0, 1]</strong> is divided into two subintervals, each subinterval has length
+              <strong>\u0394x = 1/2</strong>. The endpoints are <strong>{0, 1/2, 1}</strong>. With <strong>f(x) = x<sup>3</sup></strong>:"
+            )
+          ),
+          withMathJax(
+            h4(
+              class = "center",
+              "$$S_2 = \\frac{1}{3}\\cdot\\frac{1}{2}\\big(f(0) + 4f(1/2) + f(1)\\big) = \\frac{1}{6}\\big(0 + 4(1/8) + 1\\big) = \\frac{1}{4}.$$"
+            )
+          ),
+          h4(
+            HTML(
+              "Since <strong>f<sup>(4)</sup>(x) = 0 = M</strong>, the error bound gives"
+            )
+          ),
+          withMathJax(
+            h4(
+              class = "center",
+              "$$\\bigl|\\,\\text{Error in } S_2\\,\\bigr| \\;\\le\\; \\frac{0\\cdot(1)^5}{180\\cdot 2^4} = 0,$$"
+            )
+          ),
+          h4(
+            HTML(
+              "so the value obtained through Simpson's Rule is <strong>exact</strong>. You can verify with R: <code>f &lt;- function(x) x^3; integrate(f, 0, 1)$value</code> returns <code>0.25</code>.
+              <br><br>You can reproduce this in the <strong>Calculate</strong> tab by entering <code>x^3</code>, <strong>a = 0</strong>, <strong>b = 1</strong>, <strong>n = 2</strong>."
             )
           ),
           h4(class = "center", "Applications"),
@@ -219,6 +277,14 @@ fluidPage(
               <tr><td>1*expx</td><td>1*exp(x)</td></tr>
               <tr><td>absx</td><td>abs(x)</td></tr>
             </table>"
+          ),
+          h4(class = "center", "Conclusion"),
+          h4(
+            HTML(
+              "Simpson's 1/3 Rule offers a powerful balance between <strong>simplicity and accuracy</strong>. By approximating the integrand with parabolas instead of straight lines, it produces results that are <strong>exact for any polynomial of degree three or lower</strong> and converges rapidly as the number of subintervals <i>n</i> grows \u2014 with an error that shrinks proportionally to <strong>1 / n<sup>4</sup></strong>.
+              <br><br>For smooth, well-behaved functions, Simpson's Rule typically achieves high precision with relatively few evaluations, making it a <strong>practical default</strong> when an antiderivative is unavailable or when integrating discrete data. Its main caveats are that <i>n</i> must be even and that accuracy can degrade for functions with sharp peaks, discontinuities, or rapid oscillations \u2014 cases where adaptive methods may be preferable.
+              <br><br>Use this app to <strong>experiment</strong>: compare the approximation to R's <code>integrate()</code>, watch how the error drops as you double <i>n</i>, and build intuition for when Simpson's Rule shines."
+            )
           )
         ),
         align = "center"
@@ -267,8 +333,8 @@ fluidPage(
                     "<div style='max-width: 900px; margin-left: 50px; margin-right: 50px;'>",
                     "This plot displays the function <strong>f(x)</strong> over the interval <strong>[a, b]</strong>.",
                     "The <strong>shaded blue region</strong> represents the area under the curve being approximated by Simpson's Rule.",
-                    "Black dots on the x-axis mark the <strong>subinterval points</strong> x<sub>0</sub>, x<sub>1</sub>, &hellip;, x<sub>n</sub>",
-                    "at which the function is evaluated to fit parabolas across consecutive pairs of subintervals.",
+                    "The <strong>dashed red parabolas</strong> are the actual quadratics that Simpson's Rule fits across each consecutive pair of subintervals \u2014 the integral of these parabolas is what produces the approximation.",
+                    "Black dots on the x-axis mark the <strong>subinterval points</strong> x<sub>0</sub>, x<sub>1</sub>, &hellip;, x<sub>n</sub> where the function is evaluated.",
                     "</div>"
                   )
                 )

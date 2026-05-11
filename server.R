@@ -90,33 +90,91 @@ function(input, output, session) {
     f  <- user_function()
     a  <- input$a
     b  <- input$b
+    n  <- as.integer(input$n)
 
-    x_grid <- seq(a, b, length.out = 400)
-    y_grid <- vapply(x_grid, function(xv) {
-      v <- tryCatch(f(xv), error = function(e) NA_real_)
-      as.numeric(v)
-    }, numeric(1))
+    safe_eval <- function(xv) {
+      vapply(xv, function(xx) {
+        v <- tryCatch(f(xx), error = function(e) NA_real_)
+        as.numeric(v)
+      }, numeric(1))
+    }
+
+    # Zoom out: extend the visible x-range 25% beyond [a, b] on each side
+    # so the surrounding behavior of f(x) and the fitted parabolas are visible.
+    span <- b - a
+    pad  <- 0.25 * span
+    x_lo <- a - pad
+    x_hi <- b + pad
+
+    x_full <- seq(x_lo, x_hi, length.out = 600)
+    y_full <- safe_eval(x_full)
+
+    # Inner grid (over [a, b]) used for the shaded region under the curve.
+    x_in <- seq(a, b, length.out = 400)
+    y_in <- safe_eval(x_in)
+
+    # y-limits include both the function and the fitted parabola peaks.
+    y_min <- min(c(0, y_full, df$f_xi), na.rm = TRUE)
+    y_max <- max(c(0, y_full, df$f_xi), na.rm = TRUE)
+    y_pad <- 0.1 * (y_max - y_min + 1e-9)
 
     op <- par(mar = c(5, 4, 4, 2) + 0.1)
     on.exit(par(op), add = TRUE)
 
-    plot(x_grid, y_grid, type = "n",
+    plot(x_full, y_full, type = "n",
+         xlim = c(x_lo, x_hi),
+         ylim = c(y_min - y_pad, y_max + y_pad),
          main = "Simpson's Rule Approximation",
          xlab = "x", ylab = "f(x)",
          cex.main = 1.4, cex.lab = 1.2, cex.axis = 1.1)
 
-    polygon(c(a, x_grid, b),
-            c(0, y_grid, 0),
+    # Shaded area under f(x) on [a, b]
+    polygon(c(a, x_in, b),
+            c(0, y_in, 0),
             col = "#cfe2f3", border = NA)
 
     abline(h = 0, col = "#888888")
-    lines(x_grid, y_grid, col = "#2d3644", lwd = 2)
+    abline(v = c(a, b), col = "#bbbbbb", lty = 2)
+
+    # Fitted Simpson parabolas: one quadratic per pair of subintervals.
+    # For each triple (x_{2k}, x_{2k+1}, x_{2k+2}) build the unique parabola
+    # passing through (x_i, f(x_i)) and draw it.
+    for (k in seq(1, n, by = 2)) {
+      x0 <- df$x_i[k]
+      x1 <- df$x_i[k + 1]
+      x2 <- df$x_i[k + 2]
+      y0 <- df$f_xi[k]
+      y1 <- df$f_xi[k + 1]
+      y2 <- df$f_xi[k + 2]
+      if (any(!is.finite(c(y0, y1, y2)))) next
+
+      A <- rbind(c(x0^2, x0, 1),
+                 c(x1^2, x1, 1),
+                 c(x2^2, x2, 1))
+      coeffs <- tryCatch(solve(A, c(y0, y1, y2)), error = function(e) NULL)
+      if (is.null(coeffs)) next
+
+      xs <- seq(x0, x2, length.out = 80)
+      ys <- coeffs[1] * xs^2 + coeffs[2] * xs + coeffs[3]
+      lines(xs, ys, col = "#d9534f", lwd = 2, lty = 2)
+    }
+
+    # The actual function curve (drawn last so it sits on top)
+    lines(x_full, y_full, col = "#2d3644", lwd = 2)
 
     points(df$x_i, df$f_xi, pch = 19, col = "#4a90d9", cex = 1.3)
     points(df$x_i, rep(0, nrow(df)), pch = 19, col = "#2d3644", cex = 1.1)
 
     segments(df$x_i, 0, df$x_i, df$f_xi,
              col = "#4a90d9", lty = 3)
+
+    legend("topleft",
+           legend = c("f(x)", "Simpson parabolas", "Nodes x_i", "[a, b]"),
+           col    = c("#2d3644", "#d9534f", "#4a90d9", "#bbbbbb"),
+           lty    = c(1, 2, NA, 2),
+           pch    = c(NA, NA, 19, NA),
+           lwd    = c(2, 2, NA, 1),
+           bty    = "n", cex = 0.95)
   })
 
   # ----- Steps (iteration boxes) -----
