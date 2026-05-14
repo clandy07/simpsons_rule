@@ -23,12 +23,11 @@ where $M$ is the maximum of $|f^{(4)}(x)|$ on $[a, b]$.
 
 ```
 simpsons_rule/
-├── ui.R         # UI: layout, styling, tabs, inputs, outputs
-├── server.R     # Server: validation, Simpson's Rule math, plot, table, steps
+├── app.R        # Single-file Shiny app: UI, server, and shinyApp() call
 └── README.md    # You are here
 ```
 
-This is a standard two-file Shiny app. R/Shiny auto-detects `ui.R` and `server.R` in the same folder — there is no `app.R`.
+This is a single-file Shiny app. Shiny auto-detects `app.R` in the folder.
 
 ---
 
@@ -62,7 +61,7 @@ No other packages are required. The app uses base R's `integrate()` for the "tru
 
 1. Install **RStudio Desktop** (free) from <https://posit.co/download/rstudio-desktop/>.
 2. **File → Open Project** … or just **File → Open Folder** and pick the `simpsons_rule` folder.
-3. Open `ui.R` or `server.R` in the editor.
+3. Open `app.R` in the editor.
 4. Click the green **▶ Run App** button in the top-right of the editor pane.
 
 The app opens in a built-in browser window. Stop it with the red stop button.
@@ -78,9 +77,9 @@ The app opens in a built-in browser window. Stop it with the red stop button.
    Rscript -e "install.packages('languageserver', repos='https://cloud.r-project.org')"
    ```
 4. **File → Open Folder…** and pick the `simpsons_rule` folder.
-5. Open `ui.R` or `server.R`. Click the **▷ Run Shiny App** button in the editor's top-right corner.
+5. Open `app.R`. Click the **▷ Run Shiny App** button in the editor's top-right corner.
 
-The app opens in VS Code's Simple Browser. Edits to `ui.R` / `server.R` hot-reload automatically (devmode).
+The app opens in VS Code's Simple Browser. Edits to `app.R` hot-reload automatically (devmode).
 
 ### Option C — PowerShell / Command Prompt
 
@@ -135,7 +134,7 @@ The app shows a friendly message instead of crashing when:
 
 ## Development Notes
 
-### How the math is implemented (`server.R`)
+### How the math is implemented (`app.R`)
 
 A single reactive, `df_results()`, returns a data frame with one row per node:
 
@@ -151,20 +150,20 @@ The approximation is `S_n = (Δx / 3) * sum(weighted)` (in code, the variable is
 
 ### Styling
 
-All CSS is inlined in `ui.R` inside a single `tags$style(HTML(...))` block. Theme:
+All CSS is inlined in `app.R` inside a single `tags$style(HTML(...))` block. Theme:
 
 - Roboto font (loaded from Google Fonts).
 - Primary accent: `#4a90d9` (blue).
 - Sidebar / dark elements: `#2d3644`.
 - Iteration boxes: white background, blue header bar with an auto-incrementing CSS counter (`content: 'Iteration ' counter(section)`).
 
-To restyle, edit the CSS block in `ui.R`. To change the iteration header text or color, look for `.calculations_box:before` and `.calculations_box.summary:before`.
+To restyle, edit the CSS block in `app.R`. To change the iteration header text or color, look for `.calculations_box:before` and `.calculations_box.summary:before`.
 
 ### Quick checks before pushing changes (Windows / PowerShell)
 
 ```powershell
-# Parse-check both files
-Rscript -e "parse('ui.R'); parse('server.R'); cat('OK\n')"
+# Parse-check the script
+Rscript -e "parse('app.R'); cat('OK\n')"
 
 # Sanity-check the math (Simpson is exact on cubics)
 Rscript -e "f <- function(x) x^3 + 2*x; a <- 0; b <- 4; n <- 4; h <- (b-a)/n; x <- seq(a,b,length.out=n+1); k <- c(1,4,2,4,1); cat('approx =', (h/3)*sum(k*f(x)), ' (expected 80)\n')"
