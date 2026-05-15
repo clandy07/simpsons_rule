@@ -301,7 +301,9 @@ ui <- fluidPage(
             textInput("func", "Function f(x) in R format:", value = "x^3 + 2*x"),
             numericInput("a", "Lower bound a:", value = 0),
             numericInput("b", "Upper bound b:", value = 4),
-            numericInput("n", "Number of subintervals n (even):", value = 4, min = 2, step = 2)
+              numericInput("tol", "Tolerance:", value = 0.001, min = 0, step = 0.001),
+              h4("Calculated subintervals n:"),
+              verbatimTextOutput("subintervals")
           ),
           column(
             width = 12,
@@ -393,18 +395,61 @@ server <- function(input, output, session) {
     f
   })
 
-  # Core reactive: validates inputs and returns a data frame with one row per node.
-  df_results <- reactive({
+  estimate_fourth_derivative_max <- function(f, expr_text, a, b) {
+    grid_n <- max(401L, ceiling(abs(b - a) * 200L) + 1L)
+    grid <- seq(a, b, length.out = grid_n)
+
+    sym_expr <- tryCatch({
+      parsed <- parse(text = expr_text)
+      if (length(parsed) != 1L) stop("expression must contain a single formula")
+      d4 <- D(D(D(D(parsed[[1]], "x"), "x"), "x"), "x")
+      d4
+    }, error = function(e) NULL)
+
+    if (!is.null(sym_expr)) {
+      vals <- tryCatch(eval(sym_expr, envir = list(x = grid)), error = function(e) NULL)
+      vals <- suppressWarnings(as.numeric(vals))
+      if (!is.null(vals) && length(vals) == length(grid) && any(is.finite(vals))) {
+        return(max(abs(vals), na.rm = TRUE))
+      }
+    }
+
+    y <- tryCatch(
+      vapply(grid, function(xx) {
+        v <- tryCatch(f(xx), error = function(e) NA_real_)
+        as.numeric(v)
+      }, numeric(1)),
+      error = function(e) NULL
+    )
+
+    if (is.null(y) || length(y) < 5L || any(!is.finite(y))) {
+      return(NA_real_)
+    }
+
+    h <- grid[2L] - grid[1L]
+    d4 <- diff(y, differences = 4L) / h^4
+    if (!length(d4) || all(!is.finite(d4))) {
+      return(NA_real_)
+    }
+
+    max(abs(d4), na.rm = TRUE)
+  }
+
+  calculate_subintervals <- function(tol, m_est, a, b) {
+    if (!is.finite(m_est) || m_est < 0) return(NA_integer_)
+    if (m_est == 0) return(2L)
+
+    n_min <- ceiling(((m_est * (b - a)^5) / (180 * tol))^(1 / 4))
+    if (!is.finite(n_min) || is.na(n_min)) return(NA_integer_)
+    if (n_min < 2L) n_min <- 2L
+    if (n_min %% 2L == 1L) n_min <- n_min + 1L
+    as.integer(n_min)
+  }
+
+  computed_n <- reactive({
     validate(
-      need(!is.null(input$func) && nzchar(trimws(input$func)), "Function input is empty"),
-      need(is.numeric(input$a) && is.finite(input$a), "Lower bound a must be a number"),
-      need(is.numeric(input$b) && is.finite(input$b), "Upper bound b must be a number"),
-      need(is.numeric(input$n) && is.finite(input$n), "Number of subintervals n must be a number"),
-      need(input$b > input$a, "Upper bound b must be greater than lower bound a"),
-      need(input$n >= 2 && input$n == as.integer(input$n),
-           "n must be a positive integer (at least 2)"),
-      need(as.integer(input$n) %% 2 == 0,
-           "n must be an even number for Simpson's Rule")
+      need(is.numeric(input$tol) && is.finite(input$tol) && input$tol > 0,
+           "Tolerance must be a positive number")
     )
 
     f <- user_function()
@@ -413,7 +458,33 @@ server <- function(input, output, session) {
 
     a <- input$a
     b <- input$b
-    n <- as.integer(input$n)
+    m_est <- estimate_fourth_derivative_max(f, input$func, a, b)
+    validate(need(is.finite(m_est),
+                  "Unable to estimate a subinterval count for this function. Try a smoother expression or a larger tolerance."))
+
+    n <- calculate_subintervals(input$tol, m_est, a, b)
+    validate(need(is.finite(n), "Could not calculate an even number of subintervals from the tolerance."))
+    n
+  })
+
+  # Core reactive: validates inputs and returns a data frame with one row per node.
+  df_results <- reactive({
+    validate(
+      need(!is.null(input$func) && nzchar(trimws(input$func)), "Function input is empty"),
+      need(is.numeric(input$a) && is.finite(input$a), "Lower bound a must be a number"),
+      need(is.numeric(input$b) && is.finite(input$b), "Upper bound b must be a number"),
+      need(input$b > input$a, "Upper bound b must be greater than lower bound a"),
+      need(is.numeric(input$tol) && is.finite(input$tol) && input$tol > 0,
+           "Tolerance must be a positive number")
+    )
+
+    f <- user_function()
+    validate(need(!is.null(f),
+                  "Invalid function expression. Please check your formula (see formatting rules in the Introduction tab)."))
+
+    a <- input$a
+    b <- input$b
+    n <- computed_n()
     h <- (b - a) / n
 
     x_i  <- seq(a, b, length.out = n + 1L)
@@ -443,7 +514,7 @@ server <- function(input, output, session) {
     df <- df_results()
     a <- input$a
     b <- input$b
-    n <- as.integer(input$n)
+    n <- computed_n()
     h <- (b - a) / n
     approx <- (h / 3) * sum(df$weighted)
 
@@ -454,7 +525,7 @@ server <- function(input, output, session) {
     )
     abs_err <- if (is.na(true_val)) NA_real_ else abs(true_val - approx)
 
-    list(h = h, approx = approx, true_val = true_val, abs_err = abs_err)
+    list(h = h, n = n, approx = approx, true_val = true_val, abs_err = abs_err)
   })
 
   # ----- Plot -----
@@ -463,7 +534,7 @@ server <- function(input, output, session) {
     f  <- user_function()
     a  <- input$a
     b  <- input$b
-    n  <- as.integer(input$n)
+    n  <- computed_n()
 
     safe_eval <- function(xv) {
       vapply(xv, function(xx) {
@@ -570,7 +641,9 @@ server <- function(input, output, session) {
     weighted_strs <- format(df$weighted, digits = 6)
     sum_expr <- paste(weighted_strs, collapse = " + ")
     summary_txt <- paste0(
-      "\u0394x = (b - a) / n = (", input$b, " - ", input$a, ") / ", input$n,
+      "Tolerance = ", format(input$tol, digits = 8), "\n",
+      "Calculated n = ", s$n, " (even)\n\n",
+      "\u0394x = (b - a) / n = (", input$b, " - ", input$a, ") / ", s$n,
       " = ", format(s$h, digits = 6), "\n\n",
       "Sum of weighted values = ", sum_expr, "\n",
       "                      = ", format(sum(df$weighted), digits = 8), "\n\n",
@@ -608,6 +681,11 @@ server <- function(input, output, session) {
   output$answer <- renderPrint({
     s <- results_summary()
     cat(format(s$approx, digits = 10))
+  })
+
+  output$subintervals <- renderPrint({
+    n <- computed_n()
+    cat(n)
   })
 
   output$error <- renderPrint({

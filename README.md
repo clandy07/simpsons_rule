@@ -95,15 +95,15 @@ The app serves on `http://127.0.0.1:<port>` and opens in your default browser. P
 ## Using the App
 
 1. **Introduction tab** — Definition of Simpson's Rule, the formula, applications, and a cheatsheet of how to write functions in R.
-2. **Calculate tab — Sidebar inputs:**
+1. **Calculate tab — Sidebar inputs:**
    - `Function f(x)` — written in R syntax (e.g. `x^3 + 2*x`, `sin(x)`, `exp(-x^2)`).
    - `Lower bound a`, `Upper bound b`.
-   - `Number of subintervals n` — must be **even**.
+   - `Tolerance` — used to estimate an even number of subintervals automatically.
 3. **Calculate tab — Right side (nested tabs):**
    - **Plot** — the curve over `[a, b]` with the approximated area shaded blue and the subinterval nodes marked.
    - **Steps** — one box per node showing `x_i`, `f(x_i)`, the Simpson coefficient (`1`, `4`, or `2`), and the weighted term, plus a final box with the full summation.
    - **Table** — a `DT` table with columns `i, x_i, f(x_i), Coefficient, Weighted Value`.
-4. Below the sidebar: the approximated integral, the true value (via `integrate()`), and the absolute error.
+4. Below the sidebar: the calculated subinterval count, the approximated integral, the true value (via `integrate()`), and the absolute error.
 
 ### R function formatting
 
@@ -127,8 +127,7 @@ The app shows a friendly message instead of crashing when:
 - the function field is empty or the expression cannot be parsed/evaluated,
 - `a` or `b` is not a finite number,
 - `b <= a`,
-- `n` is not a positive integer ≥ 2,
-- `n` is **odd** → *"n must be an even number for Simpson's Rule"*.
+- `Tolerance` is not a positive number.
 
 ---
 
